@@ -1,26 +1,41 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System;
+using UnityEngine.Events;
+using Unity.VisualScripting;
 
 public class NetworkManager : MonoBehaviour {
     public static NetworkManager inst { get; private set; }
 
     WebSocket socket = null;
 
-    bool isProduction = false;
+    bool isProduction = true;
     const string hostDevelop = "ws://localhost:7000";
-    const string hostProduction = "ws://meta.growthtopia.net";
+    const string hostProduction = "wss://meta.growthtopia.net:7000";
+
+    [SerializeField] MessageUIControl messageUIControl;
+
+    [SerializeField] UnityEvent onConnectedEvent;
 
     private void Awake()
     {
         inst = this;
+        messageUIControl.SetActive(true);
+        messageUIControl.SetMessage("서버에 접속하는 중입니다");
     }
 
     IEnumerator Start () {
-
         socket = new WebSocket(new Uri(isProduction ? hostProduction : hostDevelop));
         yield return StartCoroutine(socket.Connect());
+
         Debug.Log("WEBSOCKET CONNECTED");
+        messageUIControl.SetActive(false);
+        messageUIControl.SetMessage("서버 접속에 성공했습니다");
+
+        if (onConnectedEvent != null)
+        {
+            onConnectedEvent.Invoke();
+        }
 
         while (true)
         {
@@ -38,7 +53,7 @@ public class NetworkManager : MonoBehaviour {
 
             if (socket.error != null)
             {
-                Debug.LogError($"WEBSOCKET ERROR: {socket.error}");
+                Debug.Log($"WEBSOCKET ERROR: {socket.error}");
                 break;
             }
 
@@ -47,11 +62,12 @@ public class NetworkManager : MonoBehaviour {
 
         if (socket != null)
         {
-            socket.Close();
-            socket = null;
+            OnQuit();
         }
 
         Debug.Log("WEBSOCKET CLOSED");
+        messageUIControl.SetActive(true);
+        messageUIControl.SetMessage("서버와의 연결이 끊어졌습니다");
     }
 
     public void Send(string message)
@@ -64,7 +80,12 @@ public class NetworkManager : MonoBehaviour {
         socket.SendString(message);
     }
 
-    private void OnDestroy()
+    private void OnApplicationQuit()
+    {
+        OnQuit();
+    }
+
+    public void OnQuit()
     {
         if (socket != null)
         {

@@ -16,4 +16,14 @@ public class NetworkPacketSender : MonoBehaviour
         NetworkManager.inst.Send($"authentication{Constants.PACKET_MESSAGE_DIVIDER}{ticketToken}");
     }
 
+    public void SendRoomPlayerDataPacket(Vector3 position)
+    {
+        NetworkManager.inst.Send($"room:playerdata{Constants.PACKET_MESSAGE_DIVIDER}{position.x}{Constants.PACKET_MESSAGE_DIVIDER}{position.y}{Constants.PACKET_MESSAGE_DIVIDER}{position.z}");
+    }
+
+    public void SendRoomChatPacket(string message)
+    {
+        NetworkManager.inst.Send($"room:chat{Constants.PACKET_MESSAGE_DIVIDER}{message}");
+    }
+
 }
